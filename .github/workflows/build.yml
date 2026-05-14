@@ -7,6 +7,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Show ALL files in repo
+        run: find . -type f | sort
+
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -18,25 +21,20 @@ jobs:
           unzip -q "Godot_v4.3-stable_export_templates.tpz" -d godot_templates
           mkdir -p godot_android_lib
           find godot_templates -name "godot-lib*.aar" -exec cp {} godot_android_lib/ \;
-          echo "Godot libs found:"
-          ls godot_android_lib/
 
       - name: Find and update gradle path
         run: |
-          echo "=== Repository structure ==="
-          ls -la
-          echo ""
-          echo "=== Finding build.gradle.kts ==="
-          GRADLE_FILE=$(find . -name "build.gradle.kts" | head -1)
-          echo "Found at: $GRADLE_FILE"
+          GRADLE_FILE=$(find . -name "build.gradle.kts" 2>/dev/null | head -1)
+          if [ -z "$GRADLE_FILE" ]; then
+            echo "ERROR: build.gradle.kts not found!"
+            exit 1
+          fi
+          echo "Found: $GRADLE_FILE"
           sed -i "s|REPLACE_WITH_PATH_TO_GODOT_ANDROID_TEMPLATES|${GITHUB_WORKSPACE}/godot_android_lib|g" "$GRADLE_FILE"
-          echo "Updated content:"
-          grep "godotTemplatesPath" "$GRADLE_FILE"
 
-      - name: Find android folder and build
+      - name: Build AAR
         run: |
           ANDROID_DIR=$(find . -name "build.gradle.kts" -exec dirname {} \; | head -1)
-          echo "Building in: $ANDROID_DIR"
           cd "$ANDROID_DIR"
           gradle assembleRelease --no-daemon
 
