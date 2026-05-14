@@ -6,28 +6,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+
       - name: Download Godot Templates
         run: |
           wget -q "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
           unzip -q "Godot_v4.3-stable_export_templates.tpz" -d godot_templates
           mkdir -p godot_android_lib
           find godot_templates -name "godot-lib*.aar" -exec cp {} godot_android_lib/ \;
-      - name: Update gradle path
+          echo "Godot libs found:"
+          ls godot_android_lib/
+
+      - name: Find and update gradle path
         run: |
-          sed -i "s|REPLACE_WITH_PATH_TO_GODOT_ANDROID_TEMPLATES|${GITHUB_WORKSPACE}/godot_android_lib|g" unity-ads-godot/android/build.gradle.kts
-      - name: Build AAR
+          echo "=== Repository structure ==="
+          ls -la
+          echo ""
+          echo "=== Finding build.gradle.kts ==="
+          GRADLE_FILE=$(find . -name "build.gradle.kts" | head -1)
+          echo "Found at: $GRADLE_FILE"
+          sed -i "s|REPLACE_WITH_PATH_TO_GODOT_ANDROID_TEMPLATES|${GITHUB_WORKSPACE}/godot_android_lib|g" "$GRADLE_FILE"
+          echo "Updated content:"
+          grep "godotTemplatesPath" "$GRADLE_FILE"
+
+      - name: Find android folder and build
         run: |
-          cd unity-ads-godot/android
+          ANDROID_DIR=$(find . -name "build.gradle.kts" -exec dirname {} \; | head -1)
+          echo "Building in: $ANDROID_DIR"
+          cd "$ANDROID_DIR"
           gradle assembleRelease --no-daemon
+
       - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
           name: UnityAdsPlugin
           path: |
-            unity-ads-godot/addons/unity_ads/UnityAds.gd
-            unity-ads-godot/addons/unity_ads/plugin.cfg
-            unity-ads-godot/android/build/outputs/aar/android-release.aar
+            **/UnityAds.gd
+            **/plugin.cfg
+            **/android-release.aar
