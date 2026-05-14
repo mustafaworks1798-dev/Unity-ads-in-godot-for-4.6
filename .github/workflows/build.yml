@@ -26,15 +26,18 @@ jobs:
         run: |
           GRADLE_FILE=$(find . -name "build.gradle.kts" 2>/dev/null | head -1)
           if [ -z "$GRADLE_FILE" ]; then
-            echo "ERROR: build.gradle.kts not found!"
+            echo "ERROR: build.gradle.kts not found! Files in repo:"
+            find . -type f | sort
             exit 1
           fi
-          echo "Found: $GRADLE_FILE"
+          echo "Found at: $GRADLE_FILE"
           sed -i "s|REPLACE_WITH_PATH_TO_GODOT_ANDROID_TEMPLATES|${GITHUB_WORKSPACE}/godot_android_lib|g" "$GRADLE_FILE"
+          grep "godotTemplatesPath" "$GRADLE_FILE"
 
       - name: Build AAR
         run: |
           ANDROID_DIR=$(find . -name "build.gradle.kts" -exec dirname {} \; | head -1)
+          echo "Building in: $ANDROID_DIR"
           cd "$ANDROID_DIR"
           gradle assembleRelease --no-daemon
 
