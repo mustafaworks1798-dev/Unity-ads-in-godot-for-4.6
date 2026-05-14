@@ -9,19 +9,12 @@ val godotTemplatesPath = System.getenv("GODOT_TEMPLATES_PATH")
 android {
     namespace = "com.replit.unityadsplugin"
     compileSdk = 34
-
-    defaultConfig {
-        minSdk = 21
-    }
-
+    defaultConfig { minSdk = 21 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlin {
-        jvmToolchain(17)
-    }
+    kotlin { jvmToolchain(17) }
 }
 
 dependencies {
