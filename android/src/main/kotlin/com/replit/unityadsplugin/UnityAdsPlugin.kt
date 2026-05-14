@@ -44,7 +44,7 @@ class UnityAdsPlugin(godot: Godot) : GodotPlugin(godot),
     }
 
     @UsedByGodot
-    fun sdk_initialized(): Boolean = UnityAds.isInitialized()
+    fun sdk_initialized(): Boolean = UnityAds.isInitialized
 
     override fun onInitializationComplete() { emitSignal("initialization_complete") }
     override fun onInitializationFailed(error: UnityAds.UnityAdsInitializationError, message: String) {
