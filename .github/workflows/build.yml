@@ -7,37 +7,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Show ALL files in repo
-        run: find . -type f | sort
-
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Download Godot Templates
+      - name: Download and extract Godot library
         run: |
           wget -q "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
           unzip -q "Godot_v4.3-stable_export_templates.tpz" -d godot_templates
           mkdir -p godot_android_lib
-          find godot_templates -name "godot-lib*.aar" -exec cp {} godot_android_lib/ \;
-
-      - name: Find and update gradle path
-        run: |
-          GRADLE_FILE=$(find . -name "build.gradle.kts" 2>/dev/null | head -1)
-          if [ -z "$GRADLE_FILE" ]; then
-            echo "ERROR: build.gradle.kts not found! Files in repo:"
-            find . -type f | sort
+          ANDROID_SOURCE=$(find godot_templates -name "android_source.zip" | head -1)
+          echo "android_source.zip: $ANDROID_SOURCE"
+          if [ -n "$ANDROID_SOURCE" ]; then
+            unzip -q "$ANDROID_SOURCE" -d android_source_extracted
+            find android_source_extracted -name "godot-lib*.aar" -exec cp {} godot_android_lib/ \;
+          fi
+          echo "=== Godot libs ==="
+          ls godot_android_lib/
+          if [ -z "$(ls godot_android_lib/)" ]; then
+            echo "ERROR: No godot-lib AAR found!"
             exit 1
           fi
-          echo "Found at: $GRADLE_FILE"
+
+      - name: Update gradle path
+        run: |
+          GRADLE_FILE=$(find . -name "build.gradle.kts" 2>/dev/null | head -1)
+          echo "Found: $GRADLE_FILE"
           sed -i "s|REPLACE_WITH_PATH_TO_GODOT_ANDROID_TEMPLATES|${GITHUB_WORKSPACE}/godot_android_lib|g" "$GRADLE_FILE"
-          grep "godotTemplatesPath" "$GRADLE_FILE"
 
       - name: Build AAR
         run: |
           ANDROID_DIR=$(find . -name "build.gradle.kts" -exec dirname {} \; | head -1)
-          echo "Building in: $ANDROID_DIR"
           cd "$ANDROID_DIR"
           gradle assembleRelease --no-daemon
 
